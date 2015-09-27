@@ -1,0 +1,94 @@
+---
+title: "Statistical Inference Analysis of ToothGrowth"
+author: "Ion Suruceanu"
+date: "September 24th, 2015"
+output: pdf_document
+---
+
+# Overview
+
+Report basic inference analysis for ToothGrowth dataset. 
+
+# Load data
+
+```{r ,message=FALSE, warning=FALSE}
+library(datasets)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+
+data("ToothGrowth")
+```
+```{r}
+str(ToothGrowth)
+```
+
+#Basic analysis
+
+The dataset contains observations of the effect of Vitamin C on thooth growth in Guinea Pigs
+It contains 60 observatins on 3 variables:
+
+ * len - numeric tooth length
+ * supp - a factor column for Supplement type (VC or OJ)
+ * dose - numeric dose in milligrams
+
+The response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid).
+
+```{r}
+table(ToothGrowth$dose, ToothGrowth$supp)
+```
+
+As we can see there are 10 tests for each pair
+
+```{r}
+ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len, fill = supp)) +
+    geom_bar(stat = "identity") +
+    facet_grid(. ~ supp) +
+    xlab("Dose in miligrames") +
+    ylab("Tooth length") +
+    guides(fill = guide_legend(title = "Suppliment type"))
+```
+
+From the figure we can conclude that _there is a correlation between tooth growth size and dose levels of Vitamin C_, for both delivery methods. 
+
+
+#Inference Analysis
+
+##Comparison of tooth growth by supp and dose
+
+```{r}
+ r <- ToothGrowth %>% mutate(id = rep(1:10, times = 6))
+ r <- dcast(r, id ~ dose + supp, value.var = "len")
+ 
+ rbind(t.test(r$`0.5_OJ`, r$`1_OJ`)$conf.int,
+       t.test(r$`1_OJ`, r$`2_OJ`)$conf.int,
+       t.test(r$`0.5_OJ`, r$`2_OJ`)$conf.int
+       ) 
+ 
+```
+For Orange Juice none of intervals contains zero which means that any increase in dosege of orange juice will lead to efficient toothgrowth
+  
+
+```{r}
+ rbind(t.test(r$`0.5_VC`, r$`1_VC`)$conf.int,
+       t.test(r$`1_VC`, r$`2_VC`)$conf.int,
+       t.test(r$`0.5_VC`, r$`2_VC`)$conf.int
+       ) 
+```
+Again for VC none of interval contains zero.
+Since both suppliments show effective growth in tooth, we can conclude increasing Vitamin C in the diet will lead to longer teeth. 
+
+```{r}
+ rbind(t.test(r$`0.5_OJ`, r$`0.5_VC`)$conf.int,
+       t.test(r$`1_OJ`, r$`1_VC`)$conf.int,
+       t.test(r$`2_OJ`, r$`2_VC`)$conf.int
+       ) 
+```
+
+Results shows that for lower dosage (0.5 and 1 ) the Ascorbic accid is more efficient than Orange Juice. As for 2 mg the confident interval contains zero we can conclude that both suppliments have approximately same efficacy for tooth growth.
+
+#Conclusion
+
+Overall we can say that both suppliments are effective at tooth growth, however when comparing suppliments we see ascorbic acid is more effective than orange juice on lower dosage. For 2 milligrams it's make no difference.
+
+
